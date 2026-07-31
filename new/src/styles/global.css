@@ -1,0 +1,73 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  height: 100%;
+}
+
+.color-primary {
+  color: #409EFF;
+}
+
+.color-success {
+  color: #67C23A;
+}
+
+.color-warning {
+  color: #E6A23C;
+}
+
+.color-danger {
+  color: #F56C6C;
+}
+
+.color-info {
+  color: #909399;
+}
+
+.stat-card-container {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.stat-card {
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #666;
+}
+
+.stat-value {
+  margin-top: 4px;
+  font-size: 24px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity .2s;
+}
+
+.stat-value:hover {
+  opacity: 0.75;
+}
+
+.filter-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.filter-buttons {
+  flex: 1;
+}
+
+.pagination {
+  margin-top: 12px;
+  justify-content: end;
+}

@@ -1,0 +1,79 @@
+name: Deploy to GitHub Pages
+
+on:
+  workflow_dispatch:
+
+# 设置部署权限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 只允许一个并发部署
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 步骤 1: 构建新系统 (需要 Node 22)
+      - name: Setup Node.js for New System
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Cache new system dependencies
+        uses: actions/cache@v4
+        with:
+          path: new/node_modules
+          key: ${{ runner.os }}-new-node22-${{ hashFiles('new/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-new-node22-
+
+      - name: Install new system dependencies
+        run: npm ci --prefix new
+
+      - name: Build new system
+        run: npm run build --prefix new
+
+    # 步骤 2: 构建旧系统 (需要 Node 14)
+      - name: Setup Node.js for Old System
+        uses: actions/setup-node@v4
+        with:
+          node-version: 14
+
+      - name: Cache old system dependencies
+        uses: actions/cache@v4
+        with:
+          path: old/node_modules
+          key: ${{ runner.os }}-old-node14-${{ hashFiles('old/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-old-node14-
+
+      - name: Install old system dependencies
+        run: npm ci --prefix old
+
+      - name: Build old system
+        run: npm run build --prefix old
+
+      # 上传构建产物作为 Pages artifact
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

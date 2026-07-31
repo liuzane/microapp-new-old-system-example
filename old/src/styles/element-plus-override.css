@@ -1,0 +1,28 @@
+.el-button {
+  height: auto;
+}
+
+.el-input .el-input__icon {
+  margin-left: unset;
+}
+
+.el-textarea__inner {
+  box-shadow: unset;
+}
+
+.el-textarea__inner:hover {
+  box-shadow: unset;
+}
+
+.el-form-item {
+  display: block;
+}
+
+.el-form-item__label {
+  display: inline;
+}
+
+.el-dialog__headerbtn {
+  width: auto;
+  height: auto;
+}
