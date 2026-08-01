@@ -110,7 +110,7 @@ const updateMenu = (path: string) => {
 </script>
 
 <style scoped>
-.el-aside {
+.ep-aside {
   background: #0d1b2a;
   overflow-y: auto;
 }
@@ -137,7 +137,7 @@ const updateMenu = (path: string) => {
   text-align: center;
 }
 
-.el-menu {
+.ep-menu {
   border-right: none;
 }
 </style>

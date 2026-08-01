@@ -1,0 +1,4 @@
+// 解决主应用ElementPlus 样式与子应用的 ElementUI 样式冲突问题，主应用使用 ep 命名空间，子应用使用 el 命名空间
+@forward 'element-plus/theme-chalk/src/mixins/config.scss' with (
+  $namespace: 'ep'
+);

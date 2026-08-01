@@ -1,5 +1,5 @@
 // ElementPlus 默认样式
-import 'element-plus/dist/index.css';
+import 'element-plus/theme-chalk/src/index.scss';
 
 // 覆盖 ElementPlus 默认样式
 import './element-plus-override.css';

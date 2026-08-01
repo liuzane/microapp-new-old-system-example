@@ -37,5 +37,12 @@ export default defineConfig(({ mode }: ConfigEnv) => {
       }),
       federation(env),
     ],
+    css: {
+      preprocessorOptions: {
+        scss: {
+          additionalData: `@use "@/styles/element-plus-namespace.scss" as *;`,
+        },
+      },
+    },
   };
 });

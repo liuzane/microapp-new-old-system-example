@@ -459,15 +459,15 @@ const oldSystemUrl: string = import.meta.env.VITE_LEGACY_URL;
   height: 100%;
 }
 
-.tech-card :deep(.el-card__header) {
+.tech-card :deep(.ep-card__header) {
   background-color: #f5f7fa;
 }
 
-.new-tech :deep(.el-card__header) {
+.new-tech :deep(.ep-card__header) {
   background-color: #ecf5ff;
 }
 
-.old-tech :deep(.el-card__header) {
+.old-tech :deep(.ep-card__header) {
   background-color: #fdf6ec;
 }
 
@@ -497,11 +497,11 @@ const oldSystemUrl: string = import.meta.env.VITE_LEGACY_URL;
   line-height: 1.6;
 }
 
-.el-divider {
+.ep-divider {
   margin: 28px 0 20px;
 }
 
-.el-divider .el-icon {
+.ep-divider .ep-icon {
   margin: 0 8px;
 }
 </style>

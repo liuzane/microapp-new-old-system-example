@@ -194,26 +194,26 @@ const handleLogin = async () => {
   margin: 0;
 }
 
-:deep(.el-form-item) {
+:deep(.ep-form-item) {
   margin-bottom: 22px;
 }
 
-:deep(.el-form-item__label) {
+:deep(.ep-form-item__label) {
   font-weight: 500;
   color: #2c3e50;
   padding-bottom: 4px;
 }
 
-:deep(.el-input__wrapper) {
+:deep(.ep-input__wrapper) {
   border-radius: 10px;
   transition: box-shadow 0.2s ease;
 }
 
-:deep(.el-input__wrapper:hover) {
+:deep(.ep-input__wrapper:hover) {
   box-shadow: 0 0 0 1px #b3d8ff;
 }
 
-:deep(.el-input__wrapper.is-focus) {
+:deep(.ep-input__wrapper.is-focus) {
   box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.25);
 }
 
@@ -244,7 +244,7 @@ const handleLogin = async () => {
   margin-top: 4px;
 }
 
-.login-tips .el-text {
+.login-tips .ep-text {
   color: #9aaec2 !important;
   font-size: 13px;
 }

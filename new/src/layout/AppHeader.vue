@@ -218,7 +218,7 @@ const onLogout = (): void => {
 </script>
 
 <style scoped>
-.el-header.app-header {
+.ep-header.app-header {
   display: flex;
   align-items: center;
   padding: 0 24px;
