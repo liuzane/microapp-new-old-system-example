@@ -9,7 +9,7 @@
         <Connection />
       </el-icon>
       <h1 class="project-title">
-        new-old-microapp-example
+        microapp-new-old-system-example
       </h1>
     </div>
 

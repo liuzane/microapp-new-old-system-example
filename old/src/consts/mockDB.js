@@ -1,1 +1,1 @@
-export const DATABASE_NAME = 'new-old-microapp-example-db';
+export const DATABASE_NAME = 'microapp-new-old-system-example-db';

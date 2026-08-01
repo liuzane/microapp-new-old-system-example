@@ -1,4 +1,4 @@
-# new-old-microapp-example
+# Micro App New Old System Example
 
 基于 Micro App 实现的新老系统无缝融合方案，让 Vue 3 新系统与 Vue 2 旧系统在同一平台下协同工作。旧系统保持独立部署，通过 Micro App 加载旧系统，并实现路由同步与跨应用通信。
 
