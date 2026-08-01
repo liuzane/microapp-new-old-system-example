@@ -32,14 +32,14 @@
         </template>
         <div class="button-group">
           <el-button
-            type="primary"
+            type="danger"
             :icon="RefreshRight"
             @click="onResetTable(ORDER_STORE_NAME, '订单')"
           >
             重置订单数据
           </el-button>
           <el-button
-            type="primary"
+            type="danger"
             :icon="RefreshRight"
             @click="onResetTable(PRODUCT_STORE_NAME, '产品')"
           >
@@ -60,14 +60,14 @@
         </template>
         <div class="button-group">
           <el-button
-            type="primary"
+            type="danger"
             :icon="RefreshRight"
             @click="onResetTable(USER_STORE_NAME, '用户')"
           >
             重置用户数据
           </el-button>
           <el-button
-            type="primary"
+            type="danger"
             :icon="RefreshRight"
             @click="onResetTable(ROLE_STORE_NAME, '角色')"
           >
