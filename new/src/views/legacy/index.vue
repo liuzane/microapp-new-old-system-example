@@ -15,7 +15,7 @@
 <script setup lang="ts">
 // 基础模块
 import microApp from '@micro-zoe/micro-app';
-import { ref, onMounted, watch, onDeactivated, onBeforeUnmount } from 'vue';
+import { ref, onMounted, watch, onBeforeUnmount } from 'vue';
 import { useRoute } from 'vue-router';
 
 // 类型
@@ -49,17 +49,12 @@ watch(
 
 // 组件挂载后监听消息并获取 iframe window
 onMounted(() => {
-  microApp.addDataListener(appName, handleDataChange);
+  microApp.addDataListener(appName, handleDataChange, true);
 });
 
 // 组件卸载前移除监听
 onBeforeUnmount(() => {
   microApp.removeDataListener(appName, handleDataChange);
-});
-
-// 组件停用时重置状态
-onDeactivated(() => {
-  // isLegacyReady.value = false;
 });
 
 // 向旧系统发送路由路径

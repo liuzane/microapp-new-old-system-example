@@ -540,6 +540,14 @@ const formRules: FormRules = {
   description: [],
 };
 
+// 监听路由查询参数变化，自动搜索产品名称
+watch(() => route.query, (newQuery, oldQuery) => {
+  if (newQuery !== oldQuery) {
+    searchText.value = newQuery.name as string;
+    loadData({ searchText: searchText.value });
+  }
+});
+
 // 分页边界修正
 watch([total, pageSize, currentPage], () => {
   const totalPages: number = Math.ceil(total.value / pageSize.value);

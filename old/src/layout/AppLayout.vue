@@ -4,11 +4,15 @@
     <el-container direction="horizontal">
       <AppSider />
       <el-main class="main-content">
-        <router-view />
+        <keep-alive>
+          <router-view />
+        </keep-alive>
       </el-main>
     </el-container>
   </el-container>
-  <router-view v-else />
+  <keep-alive v-else>
+    <router-view />
+  </keep-alive>
 </template>
 
 <script>
@@ -39,9 +43,7 @@ export default {
         type: 'ready',
         payload: 'ok',
       });
-      // 监听父窗口发来的消息
-      // window.addEventListener('message', this.handleParentMessage);
-      window.microApp.addDataListener(this.handleParentMessage);
+      window.microApp.addDataListener(this.handleParentMessage, true);
     }
   },
 
@@ -54,15 +56,12 @@ export default {
 
   methods: {
     sendMessage(data) {
-      // window.parent.postMessage(data, process.env.VUE_APP_NEW_SYSTEM_ORIGIN);
-      console.log('发送消息', data);
+      console.log('旧系统发送消息', data);
       window.microApp.dispatch(data);
     },
 
     handleParentMessage(data) {
-      console.log('收到自主应用的数据', data);
-      // if (event.origin !== process.env.VUE_APP_NEW_SYSTEM_ORIGIN) return;
-      // console.log('收到新系统消息: ', event.origin, event.data);
+      console.log('收到自新系统的数据', data);
       const { type, payload } = data || {};
       if (type === 'navigate' && payload) {
         this.$router.push(payload);

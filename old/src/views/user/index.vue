@@ -243,6 +243,18 @@ export default {
     };
   },
 
+  watch: {
+    // 监听路由查询参数变化，自动搜索用户姓名
+    '$route.query': {
+      handler(newQuery, oldQuery) {
+        if (newQuery !== oldQuery) {
+          this.searchText = newQuery.name;
+          this.loadData({ searchText: newQuery.name });
+        }
+      },
+    },
+  },
+
   /**
    * 组件挂载钩子：如果路由查询参数带有 name，则自动搜索该姓名；否则正常加载列表
    */

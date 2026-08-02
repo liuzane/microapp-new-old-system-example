@@ -38,6 +38,7 @@ async function init() {
   app.use(router);
   app.use(ElementPlus, {
     locale: zhCn,
+    namespace: 'ep',
   });
 
   await router.isReady();
