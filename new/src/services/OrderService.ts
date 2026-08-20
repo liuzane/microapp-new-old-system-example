@@ -1,141 +1,32 @@
-// 类型
-import type { PageResponse } from 'mockDB/types';
-import type { DatabaseMapper } from 'mockDB/mapper';
-import type { IOrder, IOrderSearchParams } from '@/models/order';
-
 // 常量
 import { DATABASE_NAME } from '@/consts/mockDB';
 
-export default class OrderService {
-  private orderMapper: DatabaseMapper<IOrder> | undefined;
-  private initPromise?: Promise<void>;
+// 类型
+import type { DatabaseMapper } from 'mockDB/mapper';
+import type { Order } from 'mockDB/data/orders';
 
-  constructor() {}
+// 模块联邦模块
+const [
+  { ORDER_STORE_NAME }, // 订单表名称
+  { DatabaseMapper: Mapper }, // 数据库映射器
+  { default: OrderService }, // 订单服务
+] = await Promise.all([
+  import('mockDB/store-names'),
+  import('mockDB/mapper'),
+  import('mockDB/services/order-service'),
+]);
 
-  /**
-   * 初始化数据库映射器
-   */
-  private async init(): Promise<void> {
-    // 已初始化
-    if (this.orderMapper) {
-      return;
-    }
+const orderMapper: DatabaseMapper<Order> = new Mapper<Order>(DATABASE_NAME, ORDER_STORE_NAME);
 
-    // 正在初始化，等待初始化完成
-    if (this.initPromise) {
-      return this.initPromise;
-    }
-
-    // 创建唯一初始化任务
-    this.initPromise = this.initData();
-
-    try {
-      await this.initPromise;
-    } finally {
-      // 初始化结束（成功或失败）都清除锁
-      this.initPromise = undefined;
-    }
-  }
-
-  /**
-   * 初始化数据
-   */
-  async initData(): Promise<void> {
-    const { DatabaseMapper } = await import('mockDB/mapper');
-    const { ORDER_STORE_NAME } = await import('mockDB/store-names');
-
-    this.orderMapper = new DatabaseMapper<IOrder>(
-      DATABASE_NAME,
-      ORDER_STORE_NAME,
-    );
-
-    const count: number = await this.orderMapper.count();
-
-    if (count === 0) {
+export default new OrderService({
+  orderMapper,
+  init: async () => {
+    // 初始化订单表数据
+    const orderCount: number = await orderMapper.count();
+    if (orderCount === 0) {
       console.log('订单表为空，开始初始化...');
       const { default: orders } = await import('mockDB/data/orders');
-      await this.orderMapper.insertBatch(orders as IOrder[]);
+      await orderMapper.insertBatch(orders);
     }
-  }
-
-  /**
-   * 获取 Mapper
-   */
-  async getMapper(): Promise<DatabaseMapper<IOrder>> {
-    await this.init();
-    return this.orderMapper!;
-  }
-
-  /**
-   * 分页查询订单，支持订单号模糊搜索和状态筛选
-   * @param params.currentPage 当前页码（从1开始）
-   * @param params.pageSize 每页条数
-   * @param params.searchText 订单号模糊匹配关键字
-   * @param params.status 状态筛选（可选）
-   */
-  async getOrdersByPage(params: IOrderSearchParams): Promise<PageResponse<IOrder>> {
-    await this.getMapper();
-    const { currentPage, pageSize, searchText, status } = params;
-    if (!currentPage || !pageSize) {
-      throw new Error('currentPage 和 pageSize 是必填参数');
-    }
-    const filter = (item: IOrder): boolean => {
-      const matchSearch: boolean = searchText
-        ? item.orderNo.toLowerCase().includes(searchText.toLowerCase())
-        : true;
-      const matchStatus: boolean = status ? item.status === status : true;
-      return matchSearch && matchStatus;
-    };
-    return this.orderMapper!.query(currentPage, pageSize, filter);
-  }
-
-  /**
-   * 获取全量订单（用于统计）
-   */
-  async getAllOrders(): Promise<IOrder[]> {
-    await this.getMapper();
-    return this.orderMapper!.getAll();
-  }
-
-  /**
-   * 获取单条订单
-   */
-  async getOrder(id: number): Promise<IOrder | undefined> {
-    await this.getMapper();
-    return this.orderMapper!.getByKey(id);
-  }
-
-  /**
-   * 更新订单
-   */
-  async updateOrder(order: IOrder): Promise<void> {
-    await this.getMapper();
-    await this.orderMapper!.update(order);
-  }
-
-  /**
-   * 删除订单
-   */
-  async deleteOrder(id: number): Promise<void> {
-    await this.getMapper();
-    await this.orderMapper!.deleteByKey(id);
-  }
-
-  /**
-   * 插入订单
-   */
-  async insertOrder(order: IOrder): Promise<void> {
-    await this.getMapper();
-    await this.orderMapper!.insert(order);
-  }
-
-  /**
-   * 重置数据库：清空所有数据并重新生成
-   */
-  async reset(): Promise<void> {
-    await this.getMapper();
-    const { default: orders } = await import('mockDB/data/orders');
-    await this.orderMapper!.clear();
-    await this.orderMapper!.insertBatch(orders as IOrder[]);
-  }
-}
+  },
+});

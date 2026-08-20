@@ -37,6 +37,7 @@
       <el-button
         type="primary"
         icon="el-icon-plus"
+        style="margin-left: auto"
         @click="onAdd"
       >
         新增角色
@@ -51,7 +52,7 @@
       border
       style="width: 100%;"
     >
-      <el-table-column prop="id" label="ID" width="80" fixed />
+      <el-table-column type="index" label="序号" width="50" align="center" fixed />
       <el-table-column prop="name" label="角色名称" min-width="150" />
       <el-table-column prop="code" label="角色编码" min-width="150" />
       <el-table-column label="状态" min-width="120">
@@ -70,10 +71,11 @@
       </el-table-column>
       <el-table-column label="用户数量" min-width="100">
         <template slot-scope="{ row }">
-          {{ row.userCount }} 人
+          {{ row.userCount !== -1 ? `${row.userCount} 人` : '-' }}
         </template>
       </el-table-column>
       <el-table-column prop="createTime" label="创建时间" min-width="180" sortable />
+      <el-table-column prop="updateTime" label="更新时间" min-width="180" sortable />
       <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
       <el-table-column label="操作" width="240" fixed="right">
         <template slot-scope="{ row }">
@@ -98,22 +100,24 @@
 
     <!-- 查看角色对话框 -->
     <el-dialog
-      :title="`角色详情 - ${viewRecord ? viewRecord.name : ''}`"
+      :title="`角色详情 - ${currentRecord ? currentRecord.name : ''}`"
       :visible.sync="viewModalVisible"
       width="700px"
     >
-      <el-descriptions v-if="viewRecord" :column="2" border>
-        <el-descriptions-item label="角色ID">{{ viewRecord.id }}</el-descriptions-item>
-        <el-descriptions-item label="角色编码">{{ viewRecord.code }}</el-descriptions-item>
-        <el-descriptions-item label="角色名称" :span="2">{{ viewRecord.name }}</el-descriptions-item>
+      <el-descriptions v-if="currentRecord" :column="2" border>
+        <el-descriptions-item label="角色编码">{{ currentRecord.code }}</el-descriptions-item>
+        <el-descriptions-item label="角色名称">{{ currentRecord.name }}</el-descriptions-item>
         <el-descriptions-item label="角色状态">
-          <el-tag :type="STATUS_MAP[viewRecord.status] ? STATUS_MAP[viewRecord.status].type : 'info'">
-            {{ STATUS_MAP[viewRecord.status] ? STATUS_MAP[viewRecord.status].text : viewRecord.status }}
+          <el-tag :type="STATUS_MAP[currentRecord.status] ? STATUS_MAP[currentRecord.status].type : 'info'">
+            {{ STATUS_MAP[currentRecord.status] ? STATUS_MAP[currentRecord.status].text : currentRecord.status }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="用户数量">{{ viewRecord.userCount }} 人</el-descriptions-item>
-        <el-descriptions-item label="创建时间" :span="2">{{ viewRecord.createTime }}</el-descriptions-item>
-        <el-descriptions-item label="角色描述" :span="2">{{ viewRecord.description }}</el-descriptions-item>
+        <el-descriptions-item label="用户数量">
+          {{ currentRecord.userCount !== -1 ? `${currentRecord.userCount} 人` : '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="创建时间" :span="2">{{ currentRecord.createTime }}</el-descriptions-item>
+        <el-descriptions-item label="更新时间" :span="2">{{ currentRecord.updateTime }}</el-descriptions-item>
+        <el-descriptions-item label="角色描述" :span="2">{{ currentRecord.description }}</el-descriptions-item>
       </el-descriptions>
       <span slot="footer">
         <el-button @click="viewModalVisible = false">关闭</el-button>
@@ -122,7 +126,7 @@
 
     <!-- 新增/编辑角色对话框 -->
     <el-dialog
-      :title="editRecord ? `编辑角色 - ${editRecord.name}` : '新增角色'"
+      :title="currentRecord ? `编辑角色 - ${currentRecord.name}` : '新增角色'"
       :visible.sync="editModalVisible"
       width="600px"
       @closed="onEditDialogClosed"
@@ -140,7 +144,7 @@
           <el-input
             v-model="editForm.code"
             placeholder="请输入角色编码（如：admin）"
-            :disabled="!!editRecord"
+            :disabled="!!currentRecord"
           />
         </el-form-item>
         <el-form-item label="角色状态" prop="status">
@@ -175,9 +179,8 @@
 import { RoleStatusEnum, STATUS_MAP } from '@/enums/role.enum';
 
 // 数据服务
-import RoleService from '@/services/RoleService';
-
-const roleService = new RoleService();
+import roleService from '@/services/roleService';
+import userService from '@/services/userService';
 
 export default {
   name: 'Role',
@@ -195,8 +198,7 @@ export default {
    * @property {number} pageSize - 每页条数
    * @property {boolean} viewModalVisible - 查看对话框显隐
    * @property {boolean} editModalVisible - 编辑/新增对话框显隐
-   * @property {Object|null} viewRecord - 当前查看的角色记录
-   * @property {Object|null} editRecord - 当前编辑的角色记录（为 null 表示新增）
+   * @property {Object|null} currentRecord - 当前操作的角色记录（为 null 表示新增）
    * @property {Object} editForm - 编辑/新增表单的数据
    * @property {Object} editFormRules - 编辑/新增表单的验证规则
    */
@@ -213,8 +215,7 @@ export default {
       pageSize: 10,
       viewModalVisible: false,
       editModalVisible: false,
-      viewRecord: null,
-      editRecord: null,
+      currentRecord: null,
       editForm: {
         name: '',
         code: '',
@@ -236,6 +237,11 @@ export default {
    * 组件挂载钩子：初始化加载角色数据
    */
   mounted() {
+    // 路由参数
+    const status = this.$route.query.status;
+    if (status) {
+      this.roleStatus = status;
+    }
     this.loadData();
   },
 
@@ -257,12 +263,47 @@ export default {
           searchText: params && 'searchText' in params ? params.searchText : this.searchText,
           status: params && 'status' in params ? params.status : this.roleStatus,
         };
-        const { data, total } = await roleService.getRolesByPage(queryParams);
-        this.dataSource = data;
-        this.total = total;
+
+        // 并行请求角色分页数据和所有用户数据
+        const [rolesResult, usersResult] = await Promise.allSettled([
+          roleService.getRolesByPage(queryParams),
+          userService.getAllUsers(),
+        ]);
+
+        let roles = [];
+        let users = [];
+
+        if (rolesResult.status === 'fulfilled' && rolesResult.value) {
+          const { code, data, msg } = rolesResult.value;
+          if (code === 200 && data) {
+            roles = data.list;
+            this.total = data.total;
+          } else {
+            throw new Error(msg || '获取角色列表失败');
+          }
+        } else {
+          throw new Error('获取角色列表失败');
+        }
+
+        if (usersResult.status === 'fulfilled' && usersResult.value) {
+          const { code, data, msg } = usersResult.value;
+          if (code === 200 && data) {
+            users = data;
+          } else {
+            console.error('加载用户数据选项失败:', msg);
+          }
+        } else {
+          console.error('加载用户数据选项失败');
+        }
+
+        // 计算每个角色的用户数量（根据 roleName 匹配）
+        this.dataSource = roles.map((role) => ({
+          ...role,
+          userCount: users.length > 0 ? users.filter((user) => user.roleName === role.name).length : -1,
+        }));
       } catch (error) {
-        console.error('加载数据失败:', error);
-        this.$message.error('加载角色数据失败，请刷新页面重试');
+        console.error('加载角色数据失败:', error);
+        this.$message.error(`加载角色数据失败: ${error.message}`);
       } finally {
         this.loading = false;
       }
@@ -287,7 +328,7 @@ export default {
      * @param {Object} record - 要查看的角色记录
      */
     onView(record) {
-      this.viewRecord = record;
+      this.currentRecord = record;
       this.viewModalVisible = true;
     },
 
@@ -296,7 +337,7 @@ export default {
      * @param {Object} record - 要编辑的角色记录
      */
     onEdit(record) {
-      this.editRecord = record;
+      this.currentRecord = record;
       this.editForm = {
         name: record.name,
         code: record.code,
@@ -310,7 +351,7 @@ export default {
      * 打开新增角色对话框，重置表单
      */
     onAdd() {
-      this.editRecord = null;
+      this.currentRecord = null;
       this.editForm = {
         name: '',
         code: '',
@@ -324,7 +365,9 @@ export default {
      * 编辑/新增对话框关闭后的回调：重置表单验证状态
      */
     onEditDialogClosed() {
-      this.$refs.editForm && this.$refs.editForm.resetFields();
+      if (this.$refs.editForm) {
+        this.$refs.editForm.resetFields();
+      }
     },
 
     /**
@@ -342,69 +385,56 @@ export default {
           cancelButtonText: '取消',
           type: 'warning',
         }
-      )
-        .then(async () => {
-          try {
-            await roleService.deleteRole(record.id);
-            await this.loadData();
+      ).then(async () => {
+        try {
+          const { code, msg } = await roleService.deleteRole(record.id);
+          if (code === 200) {
+            const totalPages = Math.ceil((this.total - 1) / this.pageSize);
+            if (this.currentPage > totalPages && totalPages > 0) {
+              this.currentPage = totalPages;
+              this.loadData({ currentPage: this.currentPage });
+            } else {
+              this.loadData();
+            }
             this.$message.success(`删除角色：${record.name} 成功`);
-          } catch (error) {
-            console.error('删除失败:', error);
-            this.$message.error('删除失败，请重试');
+          } else {
+            throw new Error(msg);
           }
-        })
-        .catch(() => {});
+        } catch (error) {
+          console.error('删除失败:', error);
+          this.$message.error(`删除角色失败: ${error.message}`);
+        }
+      }).catch(() => {});
     },
 
     /**
      * 保存编辑或新增的角色数据
-     * 若 editRecord 存在则更新，否则新增
+     * 若 currentRecord 存在则更新，否则新增
      */
     async onEditSave() {
       try {
         await this.$refs.editForm.validate();
-        if (this.editRecord) {
-          // 更新操作
-          const updatedRecord = {
-            ...this.editRecord,
-            name: this.editForm.name,
-            code: this.editForm.code,
-            status: this.editForm.status,
-            description: this.editForm.description,
-          };
-          await roleService.updateRole(updatedRecord);
-          await this.loadData();
+        const params = {
+          name: this.editForm.name,
+          code: this.editForm.code,
+          status: this.editForm.status,
+          description: this.editForm.description,
+        };
+
+        if (this.currentRecord) {
+          params.id = this.currentRecord.id;
+        }
+        const { code, msg } = await roleService.updateRole(params);
+        if (code === 200) {
+          this.loadData();
           this.editModalVisible = false;
-          this.$message.success(`角色 ${this.editRecord.name} 更新成功`);
+          this.$message.success(`角色 ${params.name} ${params.id === -1 ? '创建' : '更新'}成功`);
         } else {
-          // 新增操作
-          const newRole = {
-            id: Date.now(),
-            name: this.editForm.name,
-            code: this.editForm.code,
-            status: this.editForm.status,
-            userCount: 0,
-            createTime: new Date()
-              .toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              })
-              .replace(/\//g, '-'),
-            description: this.editForm.description,
-          };
-          await roleService.insertRole(newRole);
-          await this.loadData();
-          this.editModalVisible = false;
-          this.$message.success(`角色 ${newRole.name} 创建成功`);
+          throw new Error(msg);
         }
       } catch (error) {
-        if (error !== false) {
-          console.error('更新失败:', error);
-        }
+        console.error('保存角色失败:', error);
+        this.$message.error(`保存角色失败: ${error.message}`);
       }
     },
 
@@ -415,16 +445,15 @@ export default {
      */
     async onToggleStatus(val, record) {
       try {
-        const newStatus = val;
         const updatedRecord = {
           ...record,
-          status: newStatus,
+          status: val,
         };
         await roleService.updateRole(updatedRecord);
         await this.loadData();
       } catch (error) {
         console.error('状态切换失败:', error);
-        this.$message.error('状态切换失败，请重试');
+        this.$message.error(`状态切换失败: ${error.message}`);
       }
     },
 

@@ -35,6 +35,7 @@
       <el-button
         type="primary"
         icon="el-icon-plus"
+        style="margin-left: auto"
         @click="onAdd"
       >
         新增用户
@@ -49,11 +50,11 @@
       border
       style="width: 100%;"
     >
-      <el-table-column prop="id" label="ID" width="80" fixed />
+      <!-- 序号列 -->
+      <el-table-column type="index" label="序号" width="60" align="center" fixed />
       <el-table-column prop="name" label="姓名" min-width="120" />
-      <el-table-column prop="email" label="邮箱" min-width="200" show-overflow-tooltip />
       <el-table-column prop="phone" label="手机号" min-width="130" />
-      <el-table-column label="状态" min-width="120">
+      <el-table-column label="状态" min-width="150">
         <template slot-scope="{ row }">
           <el-tag
             :type="STATUS_MAP[row.status] ? STATUS_MAP[row.status].type : 'info'"
@@ -70,14 +71,21 @@
           />
         </template>
       </el-table-column>
-      <el-table-column prop="role" label="角色" min-width="120" />
+      <el-table-column prop="roleName" label="角色" min-width="120" />
+      <el-table-column prop="email" label="邮箱" min-width="300" show-overflow-tooltip />
       <el-table-column prop="lastLoginTime" label="最后登录" min-width="180" sortable />
       <el-table-column prop="createTime" label="创建时间" min-width="180" sortable />
+      <el-table-column prop="updateTime" label="更新时间" min-width="180" sortable />
       <el-table-column label="操作" width="240" fixed="right">
         <template slot-scope="{ row }">
           <el-button type="text" icon="el-icon-view" @click="onView(row)">查看</el-button>
           <el-button type="text" icon="el-icon-edit" @click="onEdit(row)">编辑</el-button>
-          <el-button type="text" icon="el-icon-delete" style="color: #f56c6c" @click="confirmDelete(row)">删除</el-button>
+          <el-button
+            type="text"
+            icon="el-icon-delete"
+            style="color: #f56c6c"
+            @click="confirmDelete(row)"
+          >删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -96,26 +104,27 @@
 
     <!-- 查看用户对话框 -->
     <el-dialog
-      :title="`用户详情 - ${viewRecord ? viewRecord.name : ''}`"
+      :title="`用户详情 - ${currentRecord ? currentRecord.name : ''}`"
       :visible.sync="viewModalVisible"
       width="700px"
     >
-      <el-descriptions v-if="viewRecord" :column="2" border>
-        <el-descriptions-item label="用户ID">{{ viewRecord.id }}</el-descriptions-item>
-        <el-descriptions-item label="用户角色">{{ viewRecord.role }}</el-descriptions-item>
-        <el-descriptions-item label="用户姓名" :span="2">{{ viewRecord.name }}</el-descriptions-item>
-        <el-descriptions-item label="电子邮箱">{{ viewRecord.email }}</el-descriptions-item>
-        <el-descriptions-item label="手机号码">{{ viewRecord.phone }}</el-descriptions-item>
+      <el-descriptions v-if="currentRecord" :column="2" border>
+        <el-descriptions-item label="用户ID">{{ currentRecord.id }}</el-descriptions-item>
+        <el-descriptions-item label="用户角色">{{ currentRecord.roleName }}</el-descriptions-item>
+        <el-descriptions-item label="用户姓名">{{ currentRecord.name }}</el-descriptions-item>
+        <el-descriptions-item label="电子邮箱">{{ currentRecord.email }}</el-descriptions-item>
+        <el-descriptions-item label="手机号码">{{ currentRecord.phone }}</el-descriptions-item>
         <el-descriptions-item label="用户状态">
           <el-tag
-            :type="STATUS_MAP[viewRecord.status] ? STATUS_MAP[viewRecord.status].type : 'info'"
+            :type="STATUS_MAP[currentRecord.status] ? STATUS_MAP[currentRecord.status].type : 'info'"
             size="small"
           >
-            {{ STATUS_MAP[viewRecord.status] ? STATUS_MAP[viewRecord.status].text : viewRecord.status }}
+            {{ STATUS_MAP[currentRecord.status] ? STATUS_MAP[currentRecord.status].text : currentRecord.status }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="创建时间" :span="2">{{ viewRecord.createTime }}</el-descriptions-item>
-        <el-descriptions-item label="最后登录" :span="2">{{ viewRecord.lastLoginTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间" :span="2">{{ currentRecord.createTime }}</el-descriptions-item>
+        <el-descriptions-item label="更新时间" :span="2">{{ currentRecord.updateTime }}</el-descriptions-item>
+        <el-descriptions-item label="最后登录" :span="2">{{ currentRecord.lastLoginTime || '-' }}</el-descriptions-item>
       </el-descriptions>
       <span slot="footer">
         <el-button @click="viewModalVisible = false">关闭</el-button>
@@ -124,7 +133,7 @@
 
     <!-- 新增/编辑用户对话框 -->
     <el-dialog
-      :title="editRecord ? `编辑用户 - ${editRecord.name}` : '新增用户'"
+      :title="currentRecord ? `编辑用户 - ${currentRecord.name}` : '新增用户'"
       :visible.sync="editModalVisible"
       width="600px"
       @closed="onEditDialogClosed"
@@ -154,16 +163,18 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="用户角色" prop="role">
-          <el-select v-model="editForm.role" placeholder="请选择角色">
-            <el-option value="超级管理员">超级管理员</el-option>
-            <el-option value="管理员">管理员</el-option>
-            <el-option value="产品经理">产品经理</el-option>
-            <el-option value="运营专员">运营专员</el-option>
-            <el-option value="普通用户">普通用户</el-option>
-            <el-option value="访客">访客</el-option>
-            <el-option value="数据分析师">数据分析师</el-option>
-            <el-option value="财务人员">财务人员</el-option>
+        <el-form-item label="用户角色" prop="roleName">
+          <el-select
+            v-model="editForm.roleName"
+            placeholder="请选择角色"
+            filterable
+          >
+            <el-option
+              v-for="role in roles"
+              :key="role.id"
+              :label="role.name"
+              :value="role.name"
+            />
           </el-select>
         </el-form-item>
       </el-form>
@@ -180,9 +191,8 @@
 import { UserStatusEnum, STATUS_MAP } from '@/enums/user.enum';
 
 // 数据服务
-import UserService from '@/services/UserService';
-
-const userService = new UserService();
+import userService from '@/services/userService';
+import roleService from '@/services/roleService';
 
 export default {
   name: 'User',
@@ -200,8 +210,7 @@ export default {
    * @property {number} pageSize - 每页条数
    * @property {boolean} viewModalVisible - 查看对话框显隐
    * @property {boolean} editModalVisible - 编辑/新增对话框显隐
-   * @property {Object|null} viewRecord - 当前查看的用户记录
-   * @property {Object|null} editRecord - 当前编辑的用户记录（为 null 表示新增）
+   * @property {Object|null} currentRecord - 当前操作的用户记录（为 null 表示新增）
    * @property {Object} editForm - 编辑/新增表单的数据
    * @property {Object} editFormRules - 编辑/新增表单的验证规则
    */
@@ -212,20 +221,20 @@ export default {
       dataSource: [],
       total: 0,
       loading: true,
+      roles: [],
       searchText: '',
       userStatus: '',
       currentPage: 1,
       pageSize: 10,
       viewModalVisible: false,
       editModalVisible: false,
-      viewRecord: null,
-      editRecord: null,
+      currentRecord: null,
       editForm: {
         name: '',
         email: '',
         phone: '',
         status: UserStatusEnum.Active,
-        role: '',
+        roleName: '',
       },
       editFormRules: {
         name: [{ required: true, message: '请输入用户姓名', trigger: 'blur' }],
@@ -238,34 +247,25 @@ export default {
           { pattern: /^1[3-9]\d{9}$/, message: '请输入有效的手机号码', trigger: 'blur' },
         ],
         status: [{ required: true, message: '请选择用户状态', trigger: 'change' }],
-        role: [{ required: true, message: '请选择用户角色', trigger: 'change' }],
+        roleName: [{ required: true, message: '请选择用户角色', trigger: 'change' }],
       },
     };
   },
 
-  watch: {
-    // 监听路由查询参数变化，自动搜索用户姓名
-    '$route.query': {
-      handler(newQuery, oldQuery) {
-        if (newQuery !== oldQuery) {
-          this.searchText = newQuery.name;
-          this.loadData({ searchText: newQuery.name });
-        }
-      },
-    },
-  },
-
   /**
-   * 组件挂载钩子：如果路由查询参数带有 name，则自动搜索该姓名；否则正常加载列表
+   * 组件挂载钩子：如果路由查询参数带有 name 或 status，则自动搜索该姓名或状态；否则正常加载列表
    */
   mounted() {
-    const name = this.$route.query.name;
+    // 处理路由查询参数
+    const { name, status } = this.$route.query;
     if (name) {
       this.searchText = name;
-      this.loadData({ searchText: name });
-    } else {
-      this.loadData();
     }
+    if (status) {
+      this.userStatus = status;
+    }
+    this.loadData();
+    this.loadOptions();
   },
 
   methods: {
@@ -286,14 +286,30 @@ export default {
           searchText: params && 'searchText' in params ? params.searchText : this.searchText,
           status: params && 'status' in params ? params.status : this.userStatus,
         };
-        const { data, total } = await userService.getUsersByPage(queryParams);
-        this.dataSource = data;
-        this.total = total;
+        const { code, data, msg } = await userService.getUsersByPage(queryParams);
+        if (code === 200 && data) {
+          this.dataSource = data.list;
+          this.total = data.total;
+        } else {
+          throw new Error(msg);
+        }
       } catch (error) {
-        console.error('加载数据失败:', error);
-        this.$message.error('加载用户数据失败，请刷新页面重试');
+        console.error('加载用户数据失败:', error);
+        this.$message.error(`加载用户数据失败: ${error.message}`);
       } finally {
         this.loading = false;
+      }
+    },
+
+    /**
+     * 加载角色选项
+     */
+    async loadOptions() {
+      const { code, data, msg } = await roleService.getAllRoles();
+      if (code === 200 && data) {
+        this.roles = data || [];
+      } else {
+        console.error('加载角色数据选项失败:', msg);
       }
     },
 
@@ -302,7 +318,7 @@ export default {
      * @param {Object} record - 要查看的用户记录
      */
     onView(record) {
-      this.viewRecord = record;
+      this.currentRecord = record;
       this.viewModalVisible = true;
     },
 
@@ -311,13 +327,13 @@ export default {
      * @param {Object} record - 要编辑的用户记录
      */
     onEdit(record) {
-      this.editRecord = record;
+      this.currentRecord = record;
       this.editForm = {
         name: record.name,
         email: record.email,
         phone: record.phone,
         status: record.status,
-        role: record.role,
+        roleName: record.roleName,
       };
       this.editModalVisible = true;
     },
@@ -326,13 +342,13 @@ export default {
      * 打开新增用户对话框，重置表单
      */
     onAdd() {
-      this.editRecord = null;
+      this.currentRecord = null;
       this.editForm = {
         name: '',
         email: '',
         phone: '',
         status: UserStatusEnum.Active,
-        role: '',
+        roleName: '',
       };
       this.editModalVisible = true;
     },
@@ -341,7 +357,9 @@ export default {
      * 编辑/新增对话框关闭后的回调：重置表单验证状态
      */
     onEditDialogClosed() {
-      this.$refs.editForm && this.$refs.editForm.resetFields();
+      if (this.$refs.editForm) {
+        this.$refs.editForm.resetFields();
+      }
     },
 
     /**
@@ -359,72 +377,55 @@ export default {
           cancelButtonText: '取消',
           type: 'warning',
         }
-      )
-        .then(async () => {
-          try {
-            await userService.deleteUser(record.id);
-            await this.loadData();
+      ).then(async () => {
+        try {
+          const { code, msg } = await userService.deleteUser(record.id);
+          if (code === 200) {
+            const totalPages = Math.ceil((this.total - 1) / this.pageSize);
+            if (this.currentPage > totalPages && totalPages > 0) {
+              this.currentPage = totalPages;
+              this.loadData({ currentPage: this.currentPage });
+            } else {
+              this.loadData();
+            }
             this.$message.success(`删除用户：${record.name} 成功`);
-          } catch (error) {
-            console.error('删除失败:', error);
-            this.$message.error('删除失败，请重试');
+          } else {
+            throw new Error(msg);
           }
-        })
-        .catch(() => {});
+        } catch (error) {
+          console.error('删除用户失败:', error);
+          this.$message.error(`删除用户失败: ${error.message}`);
+        }
+      }).catch(() => {});
     },
 
     /**
      * 保存编辑或新增的用户数据
-     * 若 editRecord 存在则更新，否则新增
      */
     async onEditSave() {
       try {
         await this.$refs.editForm.validate();
-        if (this.editRecord) {
-          // 更新操作
-          const updatedRecord = {
-            ...this.editRecord,
-            name: this.editForm.name,
-            email: this.editForm.email,
-            phone: this.editForm.phone,
-            status: this.editForm.status,
-            role: this.editForm.role,
-          };
-          await userService.updateUser(updatedRecord);
-          await this.loadData();
+        const params = {
+          name: this.editForm.name,
+          phone: this.editForm.phone,
+          email: this.editForm.email,
+          status: this.editForm.status,
+          roleName: this.editForm.roleName,
+        };
+        if (this.currentRecord) {
+          params.id = this.currentRecord.id;
+        }
+        const { code, msg } = await userService.updateUser(params);
+        if (code === 200) {
+          this.loadData();
           this.editModalVisible = false;
-          this.$message.success(`用户 ${this.editRecord.name} 更新成功`);
+          this.$message.success(`用户 ${params.name} ${params.id === -1 ? '创建' : '更新'}成功`);
         } else {
-          // 新增操作
-          const newUser = {
-            id: Date.now(),
-            name: this.editForm.name,
-            email: this.editForm.email,
-            phone: this.editForm.phone,
-            status: this.editForm.status,
-            role: this.editForm.role,
-            roleId: 5,
-            createTime: new Date()
-              .toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              })
-              .replace(/\//g, '-'),
-            lastLoginTime: '-',
-          };
-          await userService.insertUser(newUser);
-          await this.loadData();
-          this.editModalVisible = false;
-          this.$message.success(`用户 ${newUser.name} 创建成功`);
+          throw new Error(msg);
         }
       } catch (error) {
-        if (error !== false) {
-          console.error('更新失败:', error);
-        }
+        console.error('保存用户失败:', error);
+        this.$message.error(`保存用户失败: ${error.message}`);
       }
     },
 
@@ -435,17 +436,20 @@ export default {
      */
     async onToggleStatus(val, record) {
       try {
-        const newStatus = val;
         const updatedRecord = {
           ...record,
-          status: newStatus,
+          status: val,
         };
-        await userService.updateUser(updatedRecord);
-        await this.loadData();
-        this.$message.success(`用户 "${record.name}" 状态已更新为「${STATUS_MAP[newStatus].text}」`);
+        const { code, msg } = await userService.updateUser(updatedRecord);
+        if (code === 200) {
+          await this.loadData();
+          this.$message.success(`用户 "${record.name}" 状态已更新为「${STATUS_MAP[val].text}」`);
+        } else {
+          throw new Error(msg);
+        }
       } catch (error) {
         console.error('状态切换失败:', error);
-        this.$message.error('状态切换失败，请重试');
+        this.$message.error(`状态切换失败: ${error.message}`);
       }
     },
 

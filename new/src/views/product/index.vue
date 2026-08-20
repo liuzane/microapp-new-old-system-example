@@ -1,7 +1,7 @@
 <template>
   <el-card shadow="never">
     <template #header>
-      <span>产品管理</span>
+      <span>商品管理</span>
     </template>
 
     <!-- 统计卡片 -->
@@ -11,7 +11,7 @@
         class="stat-card"
       >
         <div class="stat-label">
-          总产品
+          总商品
         </div>
         <div
           class="stat-value color-primary"
@@ -82,7 +82,7 @@
     <div class="filter-row">
       <el-input
         v-model="searchText"
-        placeholder="搜索产品编号或名称"
+        placeholder="搜索商品编号或名称"
         style="width: 300px"
         clearable
         :prefix-icon="Search"
@@ -130,27 +130,27 @@
         :icon="Plus"
         @click="onAdd"
       >
-        新增产品
+        新增商品
       </el-button>
     </div>
 
-    <!-- 产品表格 -->
+    <!-- 商品表格 -->
     <el-table
       v-loading="loading"
       :data="dataSource"
-      row-key="productNo"
+      row-key="code"
       border
       style="width: 100%"
     >
       <el-table-column
-        prop="productNo"
-        label="产品编号"
+        prop="code"
+        label="商品编号"
         min-width="120"
         fixed="left"
       />
       <el-table-column
         prop="name"
-        label="产品名称"
+        label="商品名称"
         min-width="300"
         show-overflow-tooltip
       />
@@ -220,6 +220,12 @@
         sortable
       />
       <el-table-column
+        prop="updateTime"
+        label="更新时间"
+        min-width="180"
+        sortable
+      />
+      <el-table-column
         label="操作"
         width="240"
         fixed="right"
@@ -268,7 +274,7 @@
     <!-- 查看详情对话框 -->
     <el-dialog
       v-model="viewModalVisible"
-      :title="`产品详情 - ${currentRecord?.productNo || ''}`"
+      :title="`商品详情 - ${currentRecord?.code || ''}`"
       width="700px"
       destroy-on-close
     >
@@ -277,27 +283,21 @@
         border
         :column="2"
       >
-        <el-descriptions-item
-          label="产品编号"
-          :span="2"
-        >
-          {{ currentRecord.productNo }}
+        <el-descriptions-item label="商品编号">
+          {{ currentRecord.code }}
         </el-descriptions-item>
-        <el-descriptions-item
-          label="产品名称"
-          :span="2"
-        >
+        <el-descriptions-item label="商品名称">
           {{ currentRecord.name }}
         </el-descriptions-item>
-        <el-descriptions-item label="产品分类">
+        <el-descriptions-item label="商品分类">
           {{ CATEGORY_MAP[currentRecord.category] }}
         </el-descriptions-item>
-        <el-descriptions-item label="产品状态">
+        <el-descriptions-item label="商品状态">
           <el-tag :type="STATUS_MAP[currentRecord.status].color">
             {{ STATUS_MAP[currentRecord.status].text }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="产品价格">
+        <el-descriptions-item label="商品价格">
           ¥ {{ currentRecord.price.toLocaleString() }}
         </el-descriptions-item>
         <el-descriptions-item label="库存数量">
@@ -316,7 +316,13 @@
           {{ currentRecord.createTime }}
         </el-descriptions-item>
         <el-descriptions-item
-          label="产品描述"
+          label="更新时间"
+          :span="2"
+        >
+          {{ currentRecord.updateTime }}
+        </el-descriptions-item>
+        <el-descriptions-item
+          label="商品描述"
           :span="2"
         >
           {{ currentRecord.description }}
@@ -324,35 +330,35 @@
       </el-descriptions>
     </el-dialog>
 
-    <!-- 新增/编辑产品对话框 -->
+    <!-- 新增/编辑商品对话框 -->
     <el-dialog
       v-model="editModalVisible"
-      :title="currentRecord ? `编辑产品 - ${currentRecord.productNo}` : '新增产品'"
+      :title="currentRecord ? `编辑商品 - ${currentRecord.code}` : '新增商品'"
       width="600px"
       destroy-on-close
     >
       <el-form
         ref="formRef"
         v-loading="formLoading"
-        :model="formState"
+        :model="formData"
         :rules="formRules"
         label-width="100px"
       >
         <el-form-item
-          label="产品名称"
+          label="商品名称"
           prop="name"
         >
           <el-input
-            v-model="formState.name"
-            placeholder="请输入产品名称"
+            v-model="formData.name"
+            placeholder="请输入商品名称"
           />
         </el-form-item>
         <el-form-item
-          label="产品价格"
+          label="商品价格"
           prop="price"
         >
           <el-input-number
-            v-model="formState.price"
+            v-model="formData.price"
             :precision="2"
             :min="0.01"
             style="width: 100%"
@@ -364,18 +370,18 @@
           prop="stock"
         >
           <el-input-number
-            v-model="formState.stock"
+            v-model="formData.stock"
             :min="0"
             style="width: 100%"
             placeholder="请输入库存数量"
           />
         </el-form-item>
         <el-form-item
-          label="产品分类"
+          label="商品分类"
           prop="category"
         >
           <el-select
-            v-model="formState.category"
+            v-model="formData.category"
             placeholder="请选择分类"
             style="width: 100%"
           >
@@ -388,11 +394,11 @@
           </el-select>
         </el-form-item>
         <el-form-item
-          label="产品状态"
+          label="商品状态"
           prop="status"
         >
           <el-select
-            v-model="formState.status"
+            v-model="formData.status"
             placeholder="请选择状态"
             style="width: 100%"
           >
@@ -409,19 +415,19 @@
           prop="supplier"
         >
           <el-input
-            v-model="formState.supplier"
+            v-model="formData.supplier"
             placeholder="请输入供应商"
           />
         </el-form-item>
         <el-form-item
-          label="产品描述"
+          label="商品描述"
           prop="description"
         >
           <el-input
-            v-model="formState.description"
+            v-model="formData.description"
             type="textarea"
             :rows="2"
-            placeholder="请输入产品描述"
+            placeholder="请输入商品描述"
           />
         </el-form-item>
       </el-form>
@@ -465,7 +471,7 @@ import type {
 } from '@/models/product';
 
 // 数据服务
-import ProductService from '@/services/ProductService';
+import productService from '@/services/productService';
 
 // 状态配置映射
 const STATUS_MAP: Record<ProductStatusType, IStatusConfig> = {
@@ -477,15 +483,12 @@ const STATUS_MAP: Record<ProductStatusType, IStatusConfig> = {
 
 // 分类映射
 const CATEGORY_MAP: Record<ProductCategoryType, string> = {
-  [ProductCategoryEnum.Electronics]: '电子产品',
+  [ProductCategoryEnum.Electronics]: '电子商品',
   [ProductCategoryEnum.Clothing]: '服装',
   [ProductCategoryEnum.Home]: '家居用品',
   [ProductCategoryEnum.Beauty]: '美妆个护',
   [ProductCategoryEnum.Food]: '食品饮料',
 };
-
-// 服务实例
-const productService: ProductService = new ProductService();
 
 // 路由
 const route: RouteLocationNormalized = useRoute();
@@ -513,7 +516,7 @@ const formRef: Ref<FormInstance | undefined> = ref<FormInstance | undefined>();
 const formLoading: Ref<boolean> = ref<boolean>(false);
 
 // 表单状态
-const formState: IProductEditForm = reactive<IProductEditForm>({
+const formData: IProductEditForm = reactive<IProductEditForm>({
   name: '',
   price: 0,
   stock: 0,
@@ -525,22 +528,22 @@ const formState: IProductEditForm = reactive<IProductEditForm>({
 
 // 表单校验规则
 const formRules: FormRules = {
-  name: [{ required: true, message: '请输入产品名称', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
   price: [
-    { required: true, message: '请输入产品价格', trigger: 'blur' },
+    { required: true, message: '请输入商品价格', trigger: 'blur' },
     { type: 'number', min: 0.01, message: '价格必须大于0', trigger: 'blur' },
   ],
   stock: [
     { required: true, message: '请输入库存数量', trigger: 'blur' },
     { type: 'number', min: 0, message: '库存数量必须大于等于0', trigger: 'blur' },
   ],
-  category: [{ required: true, message: '请选择产品分类', trigger: 'change' }],
-  status: [{ required: true, message: '请选择产品状态', trigger: 'change' }],
+  category: [{ required: true, message: '请选择商品分类', trigger: 'change' }],
+  status: [{ required: true, message: '请选择商品状态', trigger: 'change' }],
   supplier: [{ required: true, message: '请输入供应商', trigger: 'blur' }],
   description: [],
 };
 
-// 监听路由查询参数变化，自动搜索产品名称
+// 监听路由查询参数变化，自动搜索商品名称
 watch(() => route.query, (newQuery, oldQuery) => {
   if (newQuery !== oldQuery) {
     searchText.value = newQuery.name as string;
@@ -565,6 +568,7 @@ onMounted(() => {
   } else {
     loadData();
   }
+  loadStatistics();
 });
 
 /**
@@ -583,56 +587,75 @@ const getStockColor = (stock: number): string => {
 };
 
 /**
- * 加载产品数据
+ * 加载商品数据
  * @param {IProductSearchParams} params - 查询参数对象
  * @param {number} params.currentPage - 当前页码
  * @param {number} params.pageSize - 每页条数
- * @param {string} params.searchText - 搜索文本（产品编号或名称）
- * @param {ProductCategoryType} params.category - 产品分类
- * @param {ProductStatusType} params.status - 产品状态
+ * @param {string} params.searchText - 搜索文本（商品编号或名称）
+ * @param {ProductCategoryType} params.category - 商品分类
+ * @param {ProductStatusType} params.status - 商品状态
  */
 const loadData = async (params?: IProductSearchParams): Promise<void> => {
   loading.value = true;
   try {
-    const { data, total: totalCount } = await productService.getProductsByPage({
+    const { code, data, msg } = await productService.getProductsByPage({
       currentPage: params && 'currentPage' in params ? params.currentPage : currentPage.value,
       pageSize: params && 'pageSize' in params ? params.pageSize : pageSize.value,
       searchText: params && 'searchText' in params ? params.searchText : searchText.value,
       category: params && 'category' in params ? params.category : category.value,
       status: params && 'status' in params ? params.status : productStatus.value,
     });
-    dataSource.value = data;
-    total.value = totalCount;
-
-    const allProducts: IProduct[] = await productService.getAllProducts();
-    statistics.value = {
-      total: allProducts.length,
-      onSale: allProducts.filter((item: IProduct) => item.status === ProductStatusEnum.OnSale).length,
-      offSale: allProducts.filter((item: IProduct) => item.status === ProductStatusEnum.OffSale).length,
-      outOfStock: allProducts.filter((item: IProduct) => item.status === ProductStatusEnum.OutOfStock).length,
-      lowStock: allProducts.filter((item: IProduct) => item.stock > 0 && item.stock < 10).length,
-    };
+    if (code === 200 && data) {
+      dataSource.value = data.list as IProduct[];
+      total.value = data.total;
+    } else {
+      throw new Error(msg);
+    }
   } catch (error) {
-    console.error('加载数据失败:', error);
-    ElMessage.error('加载产品数据失败，请刷新页面重试');
+    console.error('加载商品数据失败:', error);
+    ElMessage.error(`加载商品数据失败: ${(error as Error).message}`);
   } finally {
     loading.value = false;
   }
 };
 
 /**
- * 查看产品详情
- * @param {IProduct} record - 产品记录对象
- * @param {string} record.productNo - 产品编号
- * @param {string} record.name - 产品名称
- * @param {number} record.price - 产品价格
+ * 加载统计数据
+ */
+const loadStatistics = async (): Promise<void> => {
+  try {
+    const { code, data, msg } = await productService.getAllProducts();
+    if (code === 200 && data) {
+      const allProducts: IProduct[] = data as IProduct[];
+      statistics.value = {
+        total: allProducts.length,
+        onSale: allProducts.filter((item: IProduct) => item.status === ProductStatusEnum.OnSale).length,
+        offSale: allProducts.filter((item: IProduct) => item.status === ProductStatusEnum.OffSale).length,
+        outOfStock: allProducts.filter((item: IProduct) => item.status === ProductStatusEnum.OutOfStock).length,
+        lowStock: allProducts.filter((item: IProduct) => item.stock > 0 && item.stock < 10).length,
+      };
+    } else {
+      throw new Error(msg);
+    }
+  } catch (error) {
+    console.error('加载统计数据失败:', error);
+    ElMessage.error(`加载统计数据失败: ${(error as Error).message}`);
+  }
+};
+
+/**
+ * 查看商品详情
+ * @param {IProduct} record - 商品记录对象
+ * @param {string} record.code - 商品编号
+ * @param {string} record.name - 商品名称
+ * @param {number} record.price - 商品价格
  * @param {number} record.stock - 库存数量
  * @param {number} record.sales - 销量
- * @param {ProductCategoryType} record.category - 产品分类
- * @param {ProductStatusType} record.status - 产品状态
+ * @param {ProductCategoryType} record.category - 商品分类
+ * @param {ProductStatusType} record.status - 商品状态
  * @param {string} record.supplier - 供应商
  * @param {string} record.createTime - 创建时间
- * @param {string} record.description - 产品描述
+ * @param {string} record.description - 商品描述
  */
 const onView = (record: IProduct): void => {
   currentRecord.value = record;
@@ -640,15 +663,15 @@ const onView = (record: IProduct): void => {
 };
 
 /**
- * 编辑产品
- * @param {IProduct} record - 产品记录对象
- * @param {string} record.name - 产品名称
- * @param {number} record.price - 产品价格
+ * 编辑商品
+ * @param {IProduct} record - 商品记录对象
+ * @param {string} record.name - 商品名称
+ * @param {number} record.price - 商品价格
  * @param {number} record.stock - 库存数量
- * @param {ProductCategoryType} record.category - 产品分类
- * @param {ProductStatusType} record.status - 产品状态
+ * @param {ProductCategoryType} record.category - 商品分类
+ * @param {ProductStatusType} record.status - 商品状态
  * @param {string} record.supplier - 供应商
- * @param {string} record.description - 产品描述
+ * @param {string} record.description - 商品描述
  */
 const onEdit = (record: IProduct): void => {
   currentRecord.value = record;
@@ -661,13 +684,13 @@ const onEdit = (record: IProduct): void => {
     supplier: record.supplier,
     description: record.description,
   };
-  Object.assign(formState, formValues);
+  Object.assign(formData, formValues);
   formRef.value?.clearValidate();
   editModalVisible.value = true;
 };
 
 /**
- * 新增产品
+ * 新增商品
  */
 const onAdd = (): void => {
   currentRecord.value = null;
@@ -680,20 +703,20 @@ const onAdd = (): void => {
     supplier: '',
     description: '',
   };
-  Object.assign(formState, defaultForm);
+  Object.assign(formData, defaultForm);
   formRef.value?.clearValidate();
   editModalVisible.value = true;
 };
 
 /**
- * 确认删除产品
- * @param {IProduct} record - 产品记录对象
- * @param {string} record.productNo - 产品编号
- * @param {number} record.id - 产品ID
+ * 确认删除商品
+ * @param {IProduct} record - 商品记录对象
+ * @param {string} record.code - 商品编号
+ * @param {number} record.id - 商品ID
  */
 const confirmDelete = (record: IProduct): void => {
   ElMessageBox.confirm(
-    `确定要删除产品 ${record.productNo} 吗？此操作不可恢复。`,
+    `确定要删除商品 ${record.code} 吗？此操作不可恢复。`,
     '确认删除',
     {
       confirmButtonText: '确认',
@@ -703,12 +726,23 @@ const confirmDelete = (record: IProduct): void => {
   )
     .then(async () => {
       try {
-        await productService.deleteProduct(record.id);
-        await loadData();
-        ElMessage.success(`删除产品：${record.productNo} 成功`);
+        const { code, msg } = await productService.deleteProduct(record.id);
+        if (code === 200) {
+          const totalPages: number = Math.ceil((total.value - 1) / pageSize.value);
+          if (currentPage.value > totalPages && totalPages > 0) {
+            currentPage.value = totalPages;
+            await loadData({ currentPage: totalPages });
+          } else {
+            await loadData();
+          }
+          loadStatistics();
+          ElMessage.success(`删除商品：${record.code} 成功`);
+        } else {
+          throw new Error(msg);
+        }
       } catch (error) {
-        console.error('删除失败:', error);
-        ElMessage.error('删除失败，请重试');
+        console.error('删除商品失败:', error);
+        ElMessage.error(`删除商品失败: ${(error as Error).message}`);
       }
     })
     .catch(() => {
@@ -717,58 +751,43 @@ const confirmDelete = (record: IProduct): void => {
 };
 
 /**
- * 保存新增或编辑的产品
+ * 保存新增或编辑的商品
  */
 const onEditSave = async (): Promise<void> => {
   formLoading.value = true;
   try {
     await formRef.value!.validate();
-    if (currentRecord.value) {
-      // 更新产品
-      const updatedRecord: IProduct = {
-        ...currentRecord.value,
-        name: formState.name,
-        price: formState.price,
-        stock: formState.stock,
-        category: formState.category,
-        status: formState.status,
-        supplier: formState.supplier,
-        description: formState.description,
-      };
-      await productService.updateProduct(updatedRecord);
+    const params: {
+      id: number;
+      name: string;
+      price: number;
+      stock: number;
+      category: ProductCategoryType;
+      status: ProductStatusType;
+      supplier: string;
+      description: string;
+    } = {
+      id: currentRecord.value ? currentRecord.value.id : -1,
+      name: formData.name,
+      price: formData.price,
+      stock: formData.stock,
+      category: formData.category,
+      status: formData.status,
+      supplier: formData.supplier,
+      description: formData.description,
+    };
+    const { code, msg } = await productService.updateProduct(params);
+    if (code === 200) {
       await loadData();
+      loadStatistics();
       editModalVisible.value = false;
-      ElMessage.success(`产品 ${currentRecord.value.productNo} 更新成功`);
+      ElMessage.success(`商品 ${params.id} ${params.id === -1 ? '创建' : '更新'}成功`);
     } else {
-      // 新增产品
-      const now: Date = new Date();
-      const newProduct: IProduct = {
-        id: now.getTime(),
-        productNo: `P${now.getTime().toString().slice(-8)}`,
-        name: formState.name,
-        price: formState.price,
-        stock: formState.stock,
-        sales: 0,
-        category: formState.category,
-        status: formState.status,
-        supplier: formState.supplier,
-        createTime: now.toLocaleString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        }).replace(/\//g, '-'),
-        description: formState.description,
-      };
-      await productService.insertProduct(newProduct);
-      await loadData();
-      editModalVisible.value = false;
-      ElMessage.success(`产品 ${newProduct.name} 创建成功`);
+      throw new Error(msg);
     }
   } catch (error) {
-    console.error('表单验证失败:', error);
+    console.error('保存商品失败:', error);
+    ElMessage.error(`保存商品失败: ${(error as Error).message}`);
   } finally {
     formLoading.value = false;
   }
@@ -786,8 +805,8 @@ const onReset = (): void => {
 };
 
 /**
- * 按状态筛选产品
- * @param {ProductStatusType} status - 产品状态枚举值
+ * 按状态筛选商品
+ * @param {ProductStatusType} status - 商品状态枚举值
  */
 const onStatusChange = (status: ProductStatusType): void => {
   searchText.value = '';

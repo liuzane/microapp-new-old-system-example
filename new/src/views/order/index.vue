@@ -5,7 +5,7 @@
     </template>
 
     <!-- 统计卡片 -->
-    <div class="stat-card-container">
+    <div class="stat-card-container order-cards">
       <el-card
         shadow="never"
         class="stat-card"
@@ -60,6 +60,20 @@
           @click="() => onStatusChange(OrderStatusEnum.Shipped)"
         >
           {{ statistics.shipped }}
+        </div>
+      </el-card>
+      <el-card
+        shadow="never"
+        class="stat-card"
+      >
+        <div class="stat-label">
+          已取消
+        </div>
+        <div
+          class="stat-value color-danger"
+          @click="() => onStatusChange(OrderStatusEnum.Cancelled)"
+        >
+          {{ statistics.cancelled }}
         </div>
       </el-card>
       <el-card
@@ -246,16 +260,10 @@
         border
         :column="2"
       >
-        <el-descriptions-item
-          label="订单号"
-          :span="2"
-        >
+        <el-descriptions-item label="订单号">
           {{ currentRecord.orderNo }}
         </el-descriptions-item>
-        <el-descriptions-item
-          label="商品名称"
-          :span="2"
-        >
+        <el-descriptions-item label="商品名称">
           {{ currentRecord.productName }}
         </el-descriptions-item>
         <el-descriptions-item label="客户姓名">
@@ -297,7 +305,7 @@
       <el-form
         ref="formRef"
         v-loading="formLoading"
-        :model="formState"
+        :model="formData"
         :rules="formRules"
         label-width="100px"
       >
@@ -305,17 +313,26 @@
           label="商品名称"
           prop="productName"
         >
-          <el-input
-            v-model="formState.productName"
-            placeholder="请输入商品名称"
-          />
+          <el-select
+            v-model="formData.productName"
+            placeholder="请选择商品名称"
+            filterable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="product in products"
+              :key="product.id"
+              :label="product.name"
+              :value="product.name"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item
           label="订单金额"
           prop="amount"
         >
           <el-input-number
-            v-model="formState.amount"
+            v-model="formData.amount"
             :precision="2"
             :min="0.01"
             style="width: 100%"
@@ -327,7 +344,7 @@
           prop="status"
         >
           <el-select
-            v-model="formState.status"
+            v-model="formData.status"
             placeholder="请选择状态"
             style="width: 100%"
           >
@@ -343,17 +360,26 @@
           label="客户姓名"
           prop="customerName"
         >
-          <el-input
-            v-model="formState.customerName"
-            placeholder="请输入客户姓名"
-          />
+          <el-select
+            v-model="formData.customerName"
+            placeholder="请选择客户姓名"
+            filterable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="user in users"
+              :key="user.id"
+              :label="user.name"
+              :value="user.name"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item
           label="联系电话"
           prop="phone"
         >
           <el-input
-            v-model="formState.phone"
+            v-model="formData.phone"
             placeholder="请输入联系电话"
           />
         </el-form-item>
@@ -362,7 +388,7 @@
           prop="address"
         >
           <el-input
-            v-model="formState.address"
+            v-model="formData.address"
             type="textarea"
             :rows="2"
             placeholder="请输入收货地址"
@@ -406,9 +432,13 @@ import type {
   IStatusConfig,
   IOrderEditForm,
 } from '@/models/order';
+import type { Product } from 'mockDB/data/products';
+import type { User } from 'mockDB/data/users';
 
 // 数据服务
-import OrderService from '@/services/OrderService';
+import orderService from '@/services/orderService';
+import productService from '@/services/productService';
+import userService from '@/services/userService';
 
 // 状态配置映射
 const STATUS_MAP: Record<OrderStatusType, IStatusConfig> = {
@@ -419,9 +449,6 @@ const STATUS_MAP: Record<OrderStatusType, IStatusConfig> = {
   [OrderStatusEnum.Cancelled]: { text: '已取消', color: 'danger' },
 };
 
-// 服务实例
-const orderService: OrderService = new OrderService();
-
 // 路由
 const router: Router = useRouter();
 
@@ -429,6 +456,8 @@ const router: Router = useRouter();
 const dataSource: Ref<IOrder[]> = ref<IOrder[]>([]);
 const total: Ref<number> = ref<number>(0);
 const loading: Ref<boolean> = ref<boolean>(true);
+const products: Ref<Product[]> = ref<Product[]>([]);
+const users: Ref<User[]> = ref<User[]>([]);
 const searchText: Ref<string> = ref<string>('');
 const orderStatus: Ref<OrderStatusType | ''> = ref<OrderStatusType | ''>('');
 const currentPage: Ref<number> = ref<number>(1);
@@ -447,7 +476,7 @@ const currentRecord: Ref<IOrder | null> = ref<IOrder | null>(null);
 const formRef: Ref<FormInstance | undefined> = ref<FormInstance | undefined>();
 const formLoading: Ref<boolean> = ref<boolean>(false);
 
-const formState: IOrderEditForm = reactive<IOrderEditForm>({
+const formData: IOrderEditForm = reactive<IOrderEditForm>({
   productName: '',
   amount: 0,
   status: OrderStatusEnum.Pending,
@@ -457,13 +486,13 @@ const formState: IOrderEditForm = reactive<IOrderEditForm>({
 });
 
 const formRules: FormRules = {
-  productName: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
+  productName: [{ required: true, message: '请选择商品名称', trigger: 'change' }],
   amount: [
     { required: true, message: '请输入订单金额', trigger: 'blur' },
     { type: 'number', min: 0.01, message: '金额必须大于0', trigger: 'blur' },
   ],
   status: [{ required: true, message: '请选择订单状态', trigger: 'change' }],
-  customerName: [{ required: true, message: '请输入客户姓名', trigger: 'blur' }],
+  customerName: [{ required: true, message: '请选择客户姓名', trigger: 'change' }],
   phone: [
     { required: true, message: '请输入联系电话', trigger: 'blur' },
     { pattern: /^1[3-9]\d{9}$/, message: '请输入有效的手机号码', trigger: 'blur' },
@@ -485,6 +514,8 @@ watch(
 // 页面挂载时加载数据
 onMounted(() => {
   loadData();
+  loadStatistics();
+  loadOptions();
 });
 
 /**
@@ -498,29 +529,74 @@ onMounted(() => {
 const loadData = async (params?: IOrderSearchParams): Promise<void> => {
   loading.value = true;
   try {
-    const { data, total: totalCount } = await orderService.getOrdersByPage({
+    const { code, data, msg } = await orderService.getOrdersByPage({
       currentPage: params && 'currentPage' in params ? params.currentPage : currentPage.value,
       pageSize: params && 'pageSize' in params ? params.pageSize : pageSize.value,
       searchText: params && 'searchText' in params ? params.searchText : searchText.value,
       status: params && 'status' in params ? params.status : orderStatus.value,
     });
-    dataSource.value = data;
-    total.value = totalCount;
-
-    const allOrders: IOrder[] = await orderService.getAllOrders();
-    statistics.value = {
-      total: allOrders.length,
-      pending: allOrders.filter((item: IOrder) => item.status === OrderStatusEnum.Pending).length,
-      paid: allOrders.filter((item: IOrder) => item.status === OrderStatusEnum.Paid).length,
-      shipped: allOrders.filter((item: IOrder) => item.status === OrderStatusEnum.Shipped).length,
-      completed: allOrders.filter((item: IOrder) => item.status === OrderStatusEnum.Completed).length,
-      cancelled: allOrders.filter((item: IOrder) => item.status === OrderStatusEnum.Cancelled).length,
-    };
+    if (code === 200 && data) {
+      dataSource.value = data.list as IOrder[];
+      total.value = data.total;
+    } else {
+      throw new Error(msg);
+    }
   } catch (error) {
-    console.error('加载数据失败:', error);
-    ElMessage.error('加载订单数据失败，请刷新页面重试');
+    console.error('加载订单数据失败:', error);
+    ElMessage.error(`加载订单数据失败: ${(error as Error).message}`);
   } finally {
     loading.value = false;
+  }
+};
+
+/**
+ * 加载统计数据
+ */
+const loadStatistics = async (): Promise<void> => {
+  try {
+    const { code, data, msg } = await orderService.getAllOrders();
+    if (code === 200 && data) {
+      const allOrders: IOrder[] = data as IOrder[];
+      statistics.value = {
+        total: allOrders.length,
+        pending: allOrders.filter((item: IOrder) => item.status === OrderStatusEnum.Pending).length,
+        paid: allOrders.filter((item: IOrder) => item.status === OrderStatusEnum.Paid).length,
+        shipped: allOrders.filter((item: IOrder) => item.status === OrderStatusEnum.Shipped).length,
+        cancelled: allOrders.filter((item: IOrder) => item.status === OrderStatusEnum.Cancelled).length,
+        completed: allOrders.filter((item: IOrder) => item.status === OrderStatusEnum.Completed).length,
+      };
+    } else {
+      throw new Error(msg);
+    }
+  } catch (error) {
+    console.error('加载统计数据失败:', error);
+    ElMessage.error(`加载统计数据失败: ${(error as Error).message}`);
+  }
+};
+
+/**
+ * 加载数据选项
+ */
+const loadOptions = async (): Promise<void> => {
+  const [productsResult, usersResult] = await Promise.allSettled([
+    productService.getAllProducts(),
+    userService.getAllUsers(),
+  ]);
+  if (productsResult.status === 'fulfilled' && productsResult.value) {
+    const { code, data, msg } = productsResult.value;
+    if (code === 200 && data) {
+      products.value = data;
+    } else {
+      console.error('加载商品数据选项失败:', msg);
+    }
+  }
+  if (usersResult.status === 'fulfilled' && usersResult.value) {
+    const { code, data, msg } = usersResult.value;
+    if (code === 200 && data) {
+      users.value = data;
+    } else {
+      console.error('加载客户数据选项失败:', msg);
+    }
   }
 };
 
@@ -573,10 +649,7 @@ const onView = (record: IOrder): void => {
  */
 const onEdit = (record: IOrder): void => {
   currentRecord.value = record;
-  const formValues: Pick<
-    IOrderEditForm,
-    'productName' | 'amount' | 'status' | 'customerName' | 'phone' | 'address'
-  > = {
+  const formValues: IOrderEditForm = {
     productName: record.productName,
     amount: record.amount,
     status: record.status,
@@ -584,7 +657,7 @@ const onEdit = (record: IOrder): void => {
     phone: record.phone,
     address: record.address,
   };
-  Object.assign(formState, formValues);
+  Object.assign(formData, formValues);
   formRef.value?.clearValidate();
   editModalVisible.value = true;
 };
@@ -597,7 +670,7 @@ const onEdit = (record: IOrder): void => {
  */
 const confirmDelete = (record: IOrder): void => {
   ElMessageBox.confirm(
-    `确定要删除订单 ${record.orderNo} 吗？此操作不可恢复。`,
+    `确定要删除订单 ${record.productName}(${record.orderNo}) 吗？此操作不可恢复。`,
     '确认删除',
     {
       confirmButtonText: '确认',
@@ -607,12 +680,23 @@ const confirmDelete = (record: IOrder): void => {
   )
     .then(async () => {
       try {
-        await orderService.deleteOrder(record.id);
-        await loadData();
-        ElMessage.success(`删除订单：${record.orderNo} 成功`);
+        const { code, msg } = await orderService.deleteOrder(record.id);
+        if (code === 200) {
+          const totalPages: number = Math.ceil((total.value - 1) / pageSize.value);
+          if (currentPage.value > totalPages && totalPages > 0) {
+            currentPage.value = totalPages;
+            await loadData({ currentPage: totalPages });
+          } else {
+            await loadData();
+          }
+          loadStatistics();
+          ElMessage.success(`删除订单：${record.productName}(${record.orderNo}) 成功`);
+        } else {
+          throw new Error(msg);
+        }
       } catch (error) {
-        console.error('删除失败:', error);
-        ElMessage.error('删除失败，请重试');
+        console.error('删除订单失败:', error);
+        ElMessage.error(`删除订单失败: ${(error as Error).message}`);
       }
     })
     .catch(() => {
@@ -628,22 +712,28 @@ const onEditSave = async (): Promise<void> => {
   try {
     await formRef.value!.validate();
     if (currentRecord.value) {
-      const updatedRecord: IOrder = {
+      const params: IOrder = {
         ...currentRecord.value,
-        productName: formState.productName,
-        amount: formState.amount,
-        status: formState.status,
-        customerName: formState.customerName,
-        phone: formState.phone,
-        address: formState.address,
+        productName: formData.productName,
+        amount: formData.amount,
+        status: formData.status,
+        customerName: formData.customerName,
+        phone: formData.phone,
+        address: formData.address,
       };
-      await orderService.updateOrder(updatedRecord);
-      await loadData();
-      editModalVisible.value = false;
-      ElMessage.success(`订单 ${currentRecord.value.orderNo} 更新成功`);
+      const { code, msg } = await orderService.updateOrder(params);
+      if (code === 200) {
+        await loadData();
+        loadStatistics();
+        editModalVisible.value = false;
+        ElMessage.success(`订单 ${currentRecord.value.orderNo} 更新成功`);
+      } else {
+        throw new Error(msg);
+      }
     }
   } catch (error) {
-    console.error('表单验证失败:', error);
+    console.error('更新订单失败:', error);
+    ElMessage.error(`更新订单失败: ${(error as Error).message}`);
   } finally {
     formLoading.value = false;
   }
@@ -697,3 +787,9 @@ const onCurrentPageChange = (page: number): void => {
   loadData({ currentPage: page });
 };
 </script>
+
+<style scoped>
+.order-cards {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+</style>
